@@ -1,0 +1,242 @@
+<%@ page language="java"  pageEncoding="UTF-8"%>  
+<% String path = request.getContextPath(); %>  
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">  
+<html xmlns="http://www.w3.org/1999/xhtml">  
+<head>  
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />  
+<title>jplayer实现滚动歌词 </title>  
+  
+<link href="./jplayer.blue.monday.css" rel="stylesheet" type="text/css" />  
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jplayer/2.9.2/jplayer/jquery.jplayer.min.js"></script>
+<script type="text/javascript">  
+  
+var playTime;  
+window.lrc_obj = null;  
+  
+  
+$(document).ready(function() {  
+      
+    $("#jquery_jplayer_1").jPlayer({  
+        ready: function () {  
+            var lrc="[ar:姜玉阳][ti:痛彻心扉][00:02.43]痛彻心扉[00:07.67]制作 曾经拥有[00:13.81]希望你快乐  QQ511277376[00:28.03]怎么能够让我不再想你[00:36.00]也许爱你爱到最后只能伤心[00:42.76]已经有了离开你的勇气[00:48.44]在我的梦里你不是唯一[00:55.50]我想要再回到你温暖的怀里[01:02.31]感觉你的心跳你的呼吸[01:08.96]想到天长地久对于我们[01:13.38]渴望而不可及[01:15.92]难道命运注定就此分离[01:26.28]爱你 痛彻我心扉[01:32.27]给了你 仅有的一片天[01:38.47]回忆的碎片[01:40.85]撞翻我心中思念的火蕊[01:45.83]燃烧我整座的堡垒[01:51.42]爱你 痛彻我心扉[01:58.88]少了你 还残留一片天[02:05.13]我想我只会[02:07.57]紧握住手中凋零的玫瑰[02:12.64]品尝你赐给的泪水[02:18.89]或许你曾为我流泪[02:25.44]如今你让我痛彻心扉[02:48.09]我想要再回到你温暖的怀里[03:05.66]感觉你的心跳你的呼吸[03:12.21]想到天长地久对于我们[03:16.83]渴望而不可及[03:19.27]难道命运注定就此分离[03:29.38]爱你 痛彻我心扉[03:35.62]给了你 仅有的一片天[03:41.82]回忆的碎片[03:44.26]撞翻我心中思念的火蕊[03:49.29]燃烧我整座的堡垒[03:56.45]爱你 痛彻我心扉[04:02.19]少了你 还残留一片天[04:08.43]我想我只会[04:10.87]紧握住手中凋零的玫瑰[04:15.90]品尝你赐给的泪水[04:22.20]或许你曾为我流泪[04:28.90]如今你让我痛彻心扉[04:35.55]如今你让我痛彻心扉";  
+            change_lrc(lrc);  
+            $(this).jPlayer("setMedia", {  
+                mp3: '<%=path%>/Jplayer/mp3/2.mp3'  
+            }).jPlayer("play");  
+        },  
+          
+        timeupdate : function (obj){  
+            show_lrc(obj.jPlayer.status.currentTime);  
+            playTime = obj.jPlayer.status.currentTime;  
+        },  
+          
+        ended: function (event) {  
+            $(this).jPlayer("play");  
+        },  
+  
+        swfPath: "<%=path%>/Jplayer/js",  
+        supplied: "mp3,oga",  
+        wmode: "window"  
+    });  
+});  
+  
+      
+//把歌词转换成时间和歌词内容的一个数组  
+function change_lrc (data)  
+{  
+     //alert(data);  
+  window.lrc_item = -1;//重置歌词下标  
+  $('#lrc_panel').html('歌词解析中...');  
+  var lrc = [{time:0, lrc:''}];  
+  var match = data.match(/∗ti∗([\[]+)\]/i);  
+  if (match) lrc[0].lrc += '歌名:' + match[1] + "<br/>";//歌名  
+    
+  var match = data.match(/∗ar∗([\[]+)\]/i);  
+  if (match) lrc[0].lrc += '词:' + match[1] + "<br/>";//作词  
+    
+  var match = data.match(/∗cm∗([\[]+)\]/i);  
+  if (match) lrc[0].lrc += '曲:' + match[1] + "<br/>";//作曲  
+    
+    
+  var match = data.match(/∗al∗([\[]+)\]/i);  
+  if (match) lrc[0].lrc += '  专辑:' + match[1] + "<br/>";//专辑  
+    
+  var match = data.match(/∗sr∗([\[]+)\]/i);  
+  if (match) lrc[0].lrc += '  歌手:' + match[1] + "<br/>";//歌手  
+   
+    
+  var offset = 0;  
+  var match = data.match(/∗offset∗(\d+)/i);  
+  if (match) offset = match[1] / 1000;//时间调整  
+    
+    
+  var match = data.match(/(∗[\d\.]+∗[^]+)/g);  
+  
+  if (match){  
+    for (var i = 0; i < match.length; i++){  
+      //alert(match[i]);  
+      var temp = match[i].split(']');  
+      var temp_lrc = temp[1];  
+      temp = temp[0].replace('[', '');  
+      temp = temp.split(':');  
+      var time = 0;  
+      time += temp[temp.length - 1] * 1;//秒  
+      if (temp.length > 1) time += temp[temp.length - 2] * 60;///分  
+      if (temp.length > 2) time += temp[temp.length - 3] * 3600;///时  
+        
+      if (time != 0) time += offset;//只有非0歌词才有必要加调整;  
+      //alert(time + ':' + temp_lrc);  
+        
+      if (lrc[lrc.length -1].time == time) lrc[lrc.length -1].lrc += '  ' + temp_lrc + "<br/>";//相同时间合并  
+      else lrc[lrc.length] = {time:time, lrc:temp_lrc + "<br/>"};//按获取顺序记录,如果lrc是乱序将导致后面显示错误  
+    }  
+  }  
+    
+  window.lrc_obj = lrc;//处理好再复制  
+  //alert(lrc[57].lrc);  
+  show_lrc (0);//显示歌曲信息  
+}  
+  
+/* 
+ * 显示歌词,并得到正在播放歌词的下标, 
+ * param:sec 歌词对应的秒. 
+ */  
+function show_lrc (sec){  
+     if (!window.lrc_obj) return 0;  
+      
+     if ( window.lrc_obj[window.lrc_obj.length-1].time < sec ){  
+         if (window.lrc_item < window.lrc_obj.length){  
+             window.lrc_item = window.lrc_obj.length;  
+             center_lrc(window.lrc_obj.length - 1);//显示尾句  
+         }  
+          
+         return 0;//显示到最后一句  
+     }else if (window.lrc_item < 0){//初始化,且需要刷新歌词  
+         window.lrc_item = 1;  
+         center_lrc(0);//显示第一句  
+          
+         if (sec < window.lrc_obj[window.lrc_item].time) return 0;//处于第二句前  
+     }  
+      
+     if ( (window.lrc_obj[window.lrc_item - 1].time <= sec) && (sec < window.lrc_obj[window.lrc_item].time) ){  
+         return 0;//当前时间处于当前显示句之后,后一句之前,无需要刷新歌词  
+     }  
+      
+     if (window.lrc_obj[window.lrc_item].time < sec){//歌词过时了,自动播放或拉进度到后面  
+         do  
+         {  
+         window.lrc_item++;  
+         }while ( (window.lrc_item <= window.lrc_obj.length) && (window.lrc_obj[window.lrc_item].time < sec) )  
+          
+         center_lrc(window.lrc_item - 1);//显示后面对应一句  
+         return 0;  
+     }else{//歌词过快,如拉前了  
+         do  
+         {  
+         window.lrc_item--;  
+         }while ( (0 <= window.lrc_item) && (sec < window.lrc_obj[window.lrc_item].time) )  
+          
+         window.lrc_item++;  
+         center_lrc(window.lrc_item - 1);//显示前面对应一句  
+         return 0;  
+      
+     }  
+}  
+  
+/* 
+ * 得到正在播放的歌词 
+ * index 是数组的下标值. 
+ */  
+function center_lrc(index)  
+{  
+      if (! window.lrc_obj || (index >= window.lrc_obj.length ) || (index < 0) ) return 0;  
+      var padding = 10;//居中头尾个数  
+      var lrc_html = '';  
+        
+      for(var m = 0; m <= window.lrc_obj.length - 1; m++) {  
+         if(index != m) {  
+             if(window.lrc_obj[m].lrc == '') {  
+                lrc_html += '<li style= "list-style-type:none;">........</li>';  
+             } else {  
+                lrc_html += '<li style= "list-style-type:none;">' + window.lrc_obj[m].lrc + '</li>';  
+            }  
+         } else if(index == m) {  
+             if(window.lrc_obj[m].lrc == '') {  
+                lrc_html += '<li id="crly" style= "list-style-type:none;"><font color="blue">........</font></li>';  
+              } else {  
+                  lrc_html += '<li id="crly" style= "list-style-type:none;"><font color="purple">' + window.lrc_obj[m].lrc + '</font></li>';  
+              }  
+           }  
+      }  
+      //var lp = document.getElementById('lyrics');  
+      //lp.scrollTop=lp.scrollHeight;  
+      //alert(lrc_html);  
+      $('#lrc_panel').get(0).innerHTML = lrc_html;  
+      var lp = document.getElementById("lyrics");  
+      var lh = $("#crly").position().top;  
+      lp.scrollTop+=parseInt(lh) - 80;  
+}  
+  
+</script>  
+<style>  
+<!--  
+.lyrics{  
+font-size: 13px;  
+color:#f7b607  
+}  
+  
+-->  
+</style>  
+</head>  
+<body>  
+<div  style="float: left">  
+<div id="jquery_jplayer_1" class="jp-jplayer"></div>  
+  
+        <div id="jp_container_1" class="jp-audio">  
+            <div class="jp-type-single">  
+                <div class="jp-gui jp-interface">  
+                    <ul class="jp-controls">  
+                        <li><a href="javascript:;" class="jp-play" tabindex="1">play</a></li>  
+                        <li><a href="javascript:;" class="jp-pause" tabindex="1">pause</a></li>  
+                        <li><a href="javascript:;" class="jp-stop" tabindex="1">stop</a></li>  
+                        <li><a href="javascript:;" class="jp-mute" tabindex="1" title="mute">mute</a></li>  
+                        <li><a href="javascript:;" class="jp-unmute" tabindex="1" title="unmute">unmute</a></li>  
+                        <li><a href="javascript:;" class="jp-volume-max" tabindex="1" title="max volume">max volume</a></li>  
+                    </ul>  
+                    <div class="jp-progress">  
+                        <div class="jp-seek-bar">  
+                            <div class="jp-play-bar"></div>  
+                        </div>  
+                    </div>  
+                    <div class="jp-volume-bar">  
+                        <div class="jp-volume-bar-value"></div>  
+                    </div>  
+                    <div class="jp-time-holder">  
+                        <div class="jp-current-time"></div>  
+                        <div class="jp-duration"></div>  
+  
+                        <ul class="jp-toggles">  
+                            <li><a href="javascript:;" class="jp-repeat" tabindex="1" title="repeat">repeat</a></li>  
+                            <li><a href="javascript:;" class="jp-repeat-off" tabindex="1" title="repeat off">repeat off</a></li>  
+                        </ul>  
+                    </div>  
+                </div>  
+                <div class="jp-title">  
+                    <ul>  
+                        <li>痛彻心扉</li>  
+                    </ul>  
+                </div>  
+                <div class="jp-no-solution">  
+                    <span>Update Required</span>  
+                    To play the media you will need to either update your browser to a recent version or update your <a href="http://get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.  
+                </div>  
+            </div>  
+        </div>  
+</div>  
+<div class="lyrics" id="lyrics" style="overflow: scroll; width: 255px; height: 275px; float:right">  
+       <strong></strong>   
+       <ul id="lrc_panel" ></ul>  
+</div>  
+</body>  
+</html>  
